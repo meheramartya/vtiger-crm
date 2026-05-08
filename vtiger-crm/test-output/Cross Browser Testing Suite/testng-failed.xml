@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite thread-count="3" parallel="tests" name="Failed suite [Cross Browser Testing Suite]" guice-stage="DEVELOPMENT">
+  <test thread-count="3" parallel="tests" name="Chrome Tests(failed)">
+    <parameter name="browser" value="chrome"/>
+    <classes>
+      <class name="organizationModule.OrganizationModule">
+        <methods>
+          <include name="disconnectDB"/>
+          <include name="login"/>
+          <include name="quitBrowser"/>
+          <include name="logout"/>
+          <include name="setUp"/>
+          <include name="createOrgWithIndustryAndTypeTest" invocation-numbers="0"/>
+          <include name="configParallelExe"/>
+          <include name="closeConfigPE"/>
+          <include name="connectToDatabase"/>
+        </methods>
+      </class> <!-- organizationModule.OrganizationModule -->
+      <class name="contactModule.ContactModule">
+        <methods>
+          <include name="disconnectDB"/>
+          <include name="quitBrowser"/>
+          <include name="logout"/>
+          <include name="login"/>
+          <include name="setUp"/>
+          <include name="configParallelExe"/>
+          <include name="createContactWithOrganizationTest"/>
+          <include name="closeConfigPE"/>
+          <include name="createContactWithSupportDatesTest"/>
+          <include name="connectToDatabase"/>
+          <include name="createBasicContactTest"/>
+        </methods>
+      </class> <!-- contactModule.ContactModule -->
+    </classes>
+  </test> <!-- Chrome Tests(failed) -->
+  <test thread-count="3" parallel="tests" name="Edge Tests(failed)">
+    <parameter name="browser" value="edge"/>
+    <classes>
+      <class name="organizationModule.OrganizationModule">
+        <methods>
+          <include name="disconnectDB"/>
+          <include name="login"/>
+          <include name="quitBrowser"/>
+          <include name="logout"/>
+          <include name="setUp"/>
+          <include name="createOrgWithIndustryAndTypeTest"/>
+          <include name="configParallelExe"/>
+          <include name="createOrgTest"/>
+          <include name="closeConfigPE"/>
+          <include name="connectToDatabase"/>
+          <include name="createOrgWithPhoneTest"/>
+        </methods>
+      </class> <!-- organizationModule.OrganizationModule -->
+      <class name="contactModule.ContactModule">
+        <methods>
+          <include name="disconnectDB"/>
+          <include name="login"/>
+          <include name="logout"/>
+          <include name="quitBrowser"/>
+          <include name="setUp"/>
+          <include name="configParallelExe"/>
+          <include name="closeConfigPE"/>
+          <include name="createContactWithSupportDatesTest" invocation-numbers="0"/>
+          <include name="connectToDatabase"/>
+        </methods>
+      </class> <!-- contactModule.ContactModule -->
+    </classes>
+  </test> <!-- Edge Tests(failed) -->
+</suite> <!-- Failed suite [Cross Browser Testing Suite] -->
