@@ -2,108 +2,71 @@ package contactModule;
 
 import java.io.IOException;
 import java.util.Map;
-
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import org.testng.asserts.SoftAssert;
 
 import base.BaseClass;
 import dataProviders.ContactDataProvider;
-import listeners.RetryAnalyser;
+import listeners.UtilityObjectClass;
 import pomPages.ContactCreatePomPage;
 import pomPages.ContactPomPage;
 import pomPages.HomePomPage;
-import pomPages.LoginPomPage;
 import utils.ExcelFileUtil;
 
+import static listeners.UtilityObjectClass.*;
+
 public class CreateContactTest extends BaseClass {
-	
-	
-	/**
-	 * 
-	 * This TestNG class is used to create a new contact
-	 */
-	@Test(	groups = "smoke",			
-			dataProvider = "contactDataProvider", 
-			dataProviderClass = ContactDataProvider.class, 
-			description = "Create Contact",
-			retryAnalyzer = listeners.RetryAnalyser.class)
-	public void createTest(Map<String, String> data) throws IOException, InterruptedException {
-		
-		SoftAssert softAssert = new SoftAssert();
-		String orgName = data.get("ORG_NAME");
-		String contactName = data.get("CONTACT_NAME");
-		
-//		Login to the application
-		LoginPomPage lpp = new LoginPomPage(driver);
-		lpp.Login();
-		
-		HomePomPage hpp = new HomePomPage(driver);
-//		validate home page
-//		if(hpp.getHomePageHeading().equals("Home")) {
-//			System.out.println("Home page validated.");
-//		} else {
-//			System.out.println("Some error occurred");
-//			Assert.fail("Error Occured during Login");
-//		}
-		
-		 String actualHomeHeading = hpp.getHomePageHeading();
-	        
-	     // SOFT ASSERT - Stops test if home page not loaded
-	        softAssert.assertTrue(actualHomeHeading.contains("Home"), 
-	                " Home page heading validation failed");
-	            
-//		navigate to contact page
-		hpp.clickOnContactTab();
-		
-//		identify the "Contact" tab and click on it
-		ContactPomPage cpp = new ContactPomPage(driver);
-		
-//		create new contact
-		cpp.clickCreateNewContact();
-		
-		ContactCreatePomPage ccpp = new ContactCreatePomPage(driver);
-		
-//		validate create Contact page
-	        String createPageHeading = ccpp.getCreateContactPageHeading();
-	        
-	        // HARD ASSERT - Must be on Create Contact page
-	        Assert.assertEquals(createPageHeading, "Creating New Contact", 
-	            " Create Contact page not loaded " );
-	        System.out.println(" Create Contact page validated");
-		
-//		pass input to lastName TextField
-		ccpp.getLastNameTf().sendKeys(contactName);
-		
-//		save the contact
-		ccpp.clickSaveContact();
-		
-		
-//		navigate back to the contact page
-		hpp.clickOnContactTab();
-		
-		Thread.sleep(2000);
-		
-		String actualHeader = cpp.getContactHeader();
 
-	
-		    Assert.assertEquals(actualHeader, "Contacts");
-		    ExcelFileUtil.writeData("Contact Data1", 1, 4, "Pass");
-		
-		
-		
-		softAssert.assertAll();
-//		ContactCreatedListPomPage cclp = new ContactCreatedListPomPage(driver); 
-		
-//		click on delete button
-//		cclp.clickDelete();
-//		
-//		Thread.sleep(3000);
-//		
-//		handle popup
-//		driver.switchTo().alert().accept();
-		
+  private final String SHEET_NAME = "Contact Data1";
 
-	}
+  @Test(groups = "smoke", dataProvider = "contactDataProvider",
+      dataProviderClass = ContactDataProvider.class, description = "Create Contact",
+      retryAnalyzer = listeners.RetryAnalyser.class)
+  public void createTest(Map<String, String> data) throws IOException {
+    SoftAssert softAssert = new SoftAssert();
+    String contactName = data.get("CONTACT_NAME");
+    System.out.println("Testing Create Contact : " + contactName);
+    
+    // Using static import - super clean!
+    info("Starting Create Contact Test for: " + contactName);
+    info("Validating Home Page");
+    
+    String actualHomeHeading = new HomePomPage(driver).getHomePageHeading();
+    softAssert.assertTrue(actualHomeHeading.contains("Home"), "Home Page Not Loaded");
+    pass("Home Page Validated Successfully");
 
+    info("Navigating to Contacts Tab");
+    new HomePomPage(driver).clickOnContactTab();
+    pass("Navigated to Contacts Tab");
+
+    info("Opening Create New Contact Page");
+    new ContactPomPage(driver).clickCreateNewContact();
+
+    ContactCreatePomPage ccpp = new ContactCreatePomPage(driver);
+    String actualHeading = ccpp.getCreateContactPageHeading();
+    Assert.assertEquals(actualHeading, "Creating New Contact", "Create Contact Page Not Loaded");
+    System.out.println("Create Contact page validated");
+    pass("Create Contact Page Validated - Heading: " + actualHeading);
+
+    info("Entering Contact Name: " + contactName);
+    ccpp.getLastNameTf().sendKeys(contactName);
+    pass("Contact Name Entered: " + contactName);
+    
+    info("Clicking Save Button");
+    ccpp.clickSaveContact();
+    pass("Contact Saved Successfully");
+
+    info("Navigating back to Contacts Page");
+    new HomePomPage(driver).clickOnContactTab();
+    String actualHeader = new ContactPomPage(driver).getContactHeader();
+    Assert.assertEquals(actualHeader, "Contacts", "Contacts Page Validation Failed");
+    pass("Contacts Page Validated - Header: " + actualHeader);
+
+    ExcelFileUtil.updateTestStatus(SHEET_NAME, data, "Pass");
+    
+    softAssert.assertAll();
+    System.out.println("Contact Created Successfully");
+    pass("Contact Created Successfully for: " + contactName);
+  }
 }

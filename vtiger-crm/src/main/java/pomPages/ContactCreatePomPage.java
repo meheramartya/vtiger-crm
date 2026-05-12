@@ -61,6 +61,31 @@ public class ContactCreatePomPage {
 		return supportEndDateTf;
 	}
 	
+	//  Set last name - automatically clears before typing
+		public void setLastName(String lastName) {
+			lastNameTf.clear();
+			lastNameTf.sendKeys(lastName);
+		}
+		
+		//  Set support start date 
+		public void setSupportStartDate(String startDate) {
+			supportStartDateTf.clear();
+			supportStartDateTf.sendKeys(startDate);
+		}
+		
+		//  Set support end date
+		public void setSupportEndDate(String endDate) {
+			supportEndDateTf.clear();
+			supportEndDateTf.sendKeys(endDate);
+		}
+		
+		//  Set both support dates at once 
+		public void setSupportDates(String startDate, String endDate) {
+			supportStartDateTf.clear();
+			supportStartDateTf.sendKeys(startDate);
+			supportEndDateTf.clear();
+			supportEndDateTf.sendKeys(endDate);
+		}
 //	action 
 
 	public void clickOnAddOrgBtn() {

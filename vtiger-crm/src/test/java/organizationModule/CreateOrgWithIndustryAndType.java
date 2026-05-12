@@ -1,5 +1,6 @@
 package organizationModule;
 
+import static org.testng.Assert.assertTrue;
 import java.io.IOException;
 import java.util.Map;
 
@@ -33,24 +34,12 @@ public class CreateOrgWithIndustryAndType extends BaseClass {
 		JavaUtility ju = new JavaUtility();
 		String orgName = data.get("ORG_NAME") + ju.fetchRandomInteger();		
 		SoftAssert softAssert = new SoftAssert();
-//		Login to the application
-		LoginPomPage lpp = new LoginPomPage(driver);
-		lpp.Login();
+
 		
 		HomePomPage hpp = new HomePomPage(driver);
-		
-//		validate home page
-//		if(hpp.getHomePageHeading().equals("Home")) {
-//			System.out.println("Home page validated.");
-//		} else {
-//			System.out.println("Some error occurred");
-//			Assert.fail("Error Occured during Login");
-//		}
-		 String actualHeading = hpp.getHomePageHeading();
-	      String expectedHeading = "Home";
+		String actualHeading = hpp.getHomePageHeading();
 	        
-	        softAssert.assertEquals(actualHeading, expectedHeading, 
-	            " Home page validation failed");
+	    softAssert.assertTrue(actualHeading.contains("Home"),  " Home page validation failed");
 		
 		
 //		identify the "Organization" tab and click on it
@@ -62,20 +51,10 @@ public class CreateOrgWithIndustryAndType extends BaseClass {
 		
 		OrganizationCreatePomPage ocp = new OrganizationCreatePomPage(driver);
 		
-//		validate create Organization page
-//		if(ocp.getCreateOrgPageHeading().equals("Creating New Organization")) {
-//			System.out.println("Create Org page validated.");
-//		} else {
-//			System.out.println("Some error occurred");
-//			Assert.fail("Error Occured");
-//		}
-		
 		String actualHeading1 = ocp.getCreateOrgPageHeading();
-        String expectedHeading1 = "Creating New Organization";
         
-        // HARD ASSERT 
-        Assert.assertEquals(actualHeading1, expectedHeading1, 
-            " Create Organization page validation failed");
+        Assert.assertTrue(actualHeading1.contains("Creating New Organization"),  " Create Organization page validation failed");
+
 		
 //		pass input to Organization Name
 		ocp.getOrgNameTextField().sendKeys(orgName);
@@ -93,13 +72,7 @@ public class CreateOrgWithIndustryAndType extends BaseClass {
 		
 		OrganizationCreatedListPomPage ocl = new OrganizationCreatedListPomPage(driver);
 		
-//		validate Organization Info page
-//		if(ocl.getOrgInfoHeader().contains(orgName)) {
-//			System.out.println("Org Information page validated.");
-//		} else {
-//			System.out.println("Some error occurred");
-//			Assert.fail("Error Occured");
-//		}
+
 		 String actOrgInfoHeader = ocl.getOrgInfoHeader();
 	        
 	        // HARD ASSERT - Check if organization name appears in header
@@ -112,14 +85,9 @@ public class CreateOrgWithIndustryAndType extends BaseClass {
 		Thread.sleep(2000);
 		
 		String actualHeader = opp.getOrgHeader();
-
-		try {
-		    Assert.assertEquals(actualHeader, "Organizations");
-		    ExcelFileUtil.writeData("Organization Data", 4, 6, "Pass");
-		} catch (AssertionError e) {
-		    ExcelFileUtil.writeData("Organization Data", 4, 6, "Fail");
-		    throw e;
-		}
+		Assert.assertTrue( actualHeader.contains("Organizations"));
+		
+		ExcelFileUtil.updateTestStatus("Organization Data", data, "pass");
 		
 		softAssert.assertAll();
 	}

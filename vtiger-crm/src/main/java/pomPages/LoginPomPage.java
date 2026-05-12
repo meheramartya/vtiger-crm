@@ -62,22 +62,22 @@ public class LoginPomPage {
         wait.until(ExpectedConditions.elementToBeClickable(userNameTf));
         userNameTf.clear();
         userNameTf.sendKeys(username);
-        System.out.println("✓ Username entered: " + username);
+        System.out.println("✔ Username entered: " + username);
         
         // Wait for password field
         wait.until(ExpectedConditions.visibilityOf(passwordTf));
         wait.until(ExpectedConditions.elementToBeClickable(passwordTf));
         passwordTf.clear();
         passwordTf.sendKeys(password);
-        System.out.println("✓ Password entered");
+        System.out.println("✔ Password entered");
         
         // Wait for login button and click
         wait.until(ExpectedConditions.elementToBeClickable(loginBtn));
         loginBtn.click(); // Changed from submit() to click()
-        System.out.println("✓ Login button clicked");
+        System.out.println("✔ Login button clicked");
         
         // Wait for login to complete (page navigation)
         wait.until(ExpectedConditions.urlContains("module=Home"));
-        System.out.println("✓ Login successful");
+        System.out.println("✔ Login successful");
     }
 }

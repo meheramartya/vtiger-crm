@@ -9,196 +9,175 @@ import org.testng.annotations.Test;
 
 import base.BaseClass;
 import dataProviders.ContactDataProvider;
+import listeners.TestListener;
+import listeners.UtilityObjectClass;
 import pomPages.ChildWindowPomPage;
 import pomPages.ContactCreatePomPage;
 import pomPages.ContactPomPage;
 import pomPages.HomePomPage;
 import utils.ExcelFileUtil;
 
+import static listeners.UtilityObjectClass.*;
+
 @Listeners(listeners.TestListener.class)
 public class ContactModule extends BaseClass {
 
-    private int getRowIndex(Map<String, String> data) {
-        String slno = data.get("SLNO");
-        if (slno == null || slno.isEmpty()) return 0;
-        return slno.contains(".") ? (int) Double.parseDouble(slno) : Integer.parseInt(slno);
-    }
+  private final String SHEET_NAME = "Contact Data1";
 
-    // Test 1: Create Basic Contact
+  // COMMON METHODS
+  private void validateHomePage() {
+    info("Validating Home Page");
+    boolean isValid = new HomePomPage(driver).getHomePageHeading().contains("Home");
+    Assert.assertTrue(isValid, "Home Page Not Loaded");
+    pass("Home Page Validated Successfully");
+  }
+
+  private void navigateToContacts() {
+    info("Navigating to Contacts Tab");
+    new HomePomPage(driver).clickOnContactTab();
+    pass("Successfully Navigated to Contacts Tab");
+  }
+
+  private ContactCreatePomPage openCreateContactPage() {
+    info("Opening Create Contact Page");
+    navigateToContacts();
+    new ContactPomPage(driver).clickCreateNewContact();
+    pass("Create Contact Page Opened Successfully");
+    return new ContactCreatePomPage(driver);
+  }
+
+  private void validateContactsPage() {
+    info("Validating Contacts Page");
+    String actualHeader = new ContactPomPage(driver).getContactHeader();
+    Assert.assertTrue(actualHeader.contains("Contacts"), "Contacts Page Validation Failed");
+    pass("Contacts Page Validated Successfully. Header: " + actualHeader);
+  }
+
+  private void selectOrganization(String orgName) {
+    info("Selecting Organization: " + orgName);
+    new ChildWindowPomPage(driver).chooseOrganization(orgName);
+    pass("Organization Selected Successfully: " + orgName);
+  }
+
+  // TEST 1 : BASIC CONTACT
+
+  @Test(groups = "smoke", dataProvider = "contactDataProvider",
+      dataProviderClass = ContactDataProvider.class, description = "Create Contact",
+      retryAnalyzer = listeners.RetryAnalyser.class)
+  public void createBasicContactTest(Map<String, String> data) throws IOException {
+    String contactName = data.get("CONTACT_NAME");
     
-    @Test(groups = "smoke",
-          dataProvider = "contactDataProvider",
-          dataProviderClass = ContactDataProvider.class,
-          description = "Create Basic Contact",
-          retryAnalyzer = listeners.RetryAnalyser.class)
-    public void createBasicContactTest(Map<String, String> data) throws IOException, InterruptedException {
-        
-        String contactName = data.get("CONTACT_NAME");
-        System.out.println("-> Testing: Create Contact - " + contactName);
-        
-        // Verify home page
-        Assert.assertTrue(new HomePomPage(driver).getHomePageHeading().contains("Home"), "Home page not loaded");
-        
-        // Navigate to Contacts
-        new HomePomPage(driver).clickOnContactTab();
-        Thread.sleep(1000);
-        
-        // Create new contact
-        new ContactPomPage(driver).clickCreateNewContact();
-        Thread.sleep(500);
-        
-        // Enter contact name and save
-        ContactCreatePomPage ccpp = new ContactCreatePomPage(driver);
-        ccpp.getLastNameTf().sendKeys(contactName);
-        ccpp.clickSaveContact();
-        Thread.sleep(2000);
-        
-        // Navigate back to validate
-        new HomePomPage(driver).clickOnContactTab();
-        Thread.sleep(2000);
-        
-        // Validate
-        String actualHeader = new ContactPomPage(driver).getContactHeader();
-        Assert.assertTrue(actualHeader.contains("Contacts"), "Expected 'Contacts' in header, found: " + actualHeader);
-        
-        // Update Excel
-        ExcelFileUtil.writeData("Contact Data1", getRowIndex(data), 5, "Pass");
-        System.out.println("✓ Test Passed: Basic Contact");
-    }
+    info("=== STARTING TEST: Create Basic Contact ===");
+    info("Test Data - Contact Name: " + contactName);
+    System.out.println("Testing Basic Contact : " + contactName);
+    
+    validateHomePage();
+    
+    ContactCreatePomPage ccpp = openCreateContactPage();
+    
+    info("Setting Last Name: " + contactName);
+    ccpp.setLastName(contactName);
+    pass("Last Name Set Successfully");
+    
+    info("Saving Contact");
+    ccpp.clickSaveContact();
+    pass("Contact Saved Successfully");
+    
+    navigateToContacts();
+    validateContactsPage();
+    
+    ExcelFileUtil.updateTestStatus(SHEET_NAME, data, "Pass");
+    
+    pass(" Basic Contact Created Successfully - Contact Name: " + contactName);
+    System.out.println("Basic Contact Created Successfully");
+  }
 
-    // ==========================================
-    // Test 2: Create Contact with Organization
-    // ==========================================
-    @Test(groups = "regression",
-          dataProvider = "contactDataProvider",
-          dataProviderClass = ContactDataProvider.class,
-          description = "Create Contact With Organization",
-          retryAnalyzer = listeners.RetryAnalyser.class)
-    public void createContactWithOrganizationTest(Map<String, String> data) throws IOException, InterruptedException {
-        
-        String orgName = data.get("ORG_NAME");
-        String contactName = data.get("CONTACT_NAME");
-        System.out.println("-> Testing: Contact with Organization - " + contactName + " | Org: " + orgName);
-        
-        // Verify home page
-        Assert.assertTrue(new HomePomPage(driver).getHomePageHeading().contains("Home"), "Home page not loaded");
-        
-        // Navigate to Contacts
-        new HomePomPage(driver).clickOnContactTab();
-        Thread.sleep(1000);
-        
-        // Create new contact
-        new ContactPomPage(driver).clickCreateNewContact();
-        Thread.sleep(500);
-        
-        // Enter contact name
-        ContactCreatePomPage ccpp = new ContactCreatePomPage(driver);
-        ccpp.getLastNameTf().sendKeys(contactName);
-        
-        // Add organization
-        ccpp.clickOnAddOrgBtn();
-        Thread.sleep(1000);
-        
-        ChildWindowPomPage cwpp = new ChildWindowPomPage(driver);
-        String parentWindow = cwpp.getPatentWindowId();
-        String childWindow = cwpp.getChildWindowId(parentWindow);
-        
-        driver.switchTo().window(childWindow);
-        Thread.sleep(500);
-        cwpp.searchOrgName(orgName);
-        Thread.sleep(500);
-        cwpp.clickOnSeletedOrg(orgName);
-        Thread.sleep(500);
-        driver.switchTo().window(parentWindow);
-        Thread.sleep(500);
-        
-        // Save contact
-        ccpp.clickSaveContact();
-        Thread.sleep(2000);
-        
-        // Navigate back to validate
-        new HomePomPage(driver).clickOnContactTab();
-        Thread.sleep(2000);
-        
-        // Validate
-        String actualHeader = new ContactPomPage(driver).getContactHeader();
-        Assert.assertTrue(actualHeader.contains("Contacts"), "Expected 'Contacts' in header, found: " + actualHeader);
-        
-        // Update Excel
-        ExcelFileUtil.writeData("Contact Data1", getRowIndex(data), 5, "Pass");
-        System.out.println("✓ Test Passed: Contact with Organization");
-    }
+  // TEST 2 : CONTACT WITH ORG
 
-    // ==========================================
-    // Test 3: Create Contact with Support Dates
-    // ==========================================
-    @Test(groups = "regression",
-          dataProvider = "contactDataProvider",
-          dataProviderClass = ContactDataProvider.class,
-          description = "Create Contact With Support Dates",
-          retryAnalyzer = listeners.RetryAnalyser.class)
-    public void createContactWithSupportDatesTest(Map<String, String> data) throws IOException, InterruptedException {
-        
-        String orgName = data.get("ORG_NAME");
-        String contactName = data.get("CONTACT_NAME");
-        String startDate = data.get("SUPPORT_START_DATE");
-        String endDate = data.get("SUPPORT_END_DATE");
-        
-        System.out.println("-> Testing: Contact with Support Dates - " + contactName);
-        System.out.println("   Dates: " + startDate + " to " + endDate);
-        
-        // Verify home page
-        Assert.assertTrue(new HomePomPage(driver).getHomePageHeading().contains("Home"), "Home page not loaded");
-        
-        // Navigate to Contacts
-        new HomePomPage(driver).clickOnContactTab();
-        Thread.sleep(1000);
-        
-        // Create new contact
-        new ContactPomPage(driver).clickCreateNewContact();
-        Thread.sleep(500);
-        
-        // Enter contact name
-        ContactCreatePomPage ccpp = new ContactCreatePomPage(driver);
-        ccpp.getLastNameTf().sendKeys(contactName);
-        
-        // Add organization
-        ccpp.clickOnAddOrgBtn();
-        Thread.sleep(1000);
-        
-        ChildWindowPomPage cwpp = new ChildWindowPomPage(driver);
-        String parentWindow = cwpp.getPatentWindowId();
-        String childWindow = cwpp.getChildWindowId(parentWindow);
-        
-        driver.switchTo().window(childWindow);
-        Thread.sleep(500);
-        cwpp.searchOrgName(orgName);
-        Thread.sleep(500);
-        cwpp.clickOnSeletedOrg(orgName);
-        Thread.sleep(500);
-        driver.switchTo().window(parentWindow);
-        Thread.sleep(500);
-        
-        // Add support dates
-        ccpp.getSupportStateDateTf().clear();
-        ccpp.getSupportStateDateTf().sendKeys(startDate);
-        ccpp.getSupportEndDateTf().clear();
-        ccpp.getSupportEndDateTf().sendKeys(endDate);
-        
-        // Save contact
-        ccpp.clickSaveContact();
-        Thread.sleep(2000);
-        
-        // Navigate back to validate
-        new HomePomPage(driver).clickOnContactTab();
-        Thread.sleep(2000);
-        
-        // Validate
-        String actualHeader = new ContactPomPage(driver).getContactHeader();
-        Assert.assertTrue(actualHeader.contains("Contacts"), "Expected 'Contacts' in header, found: " + actualHeader);
-        
-        // Update Excel
-        ExcelFileUtil.writeData("Contact Data1", getRowIndex(data), 5, "Pass");
-        System.out.println("✓ Test Passed: Contact with Support Dates");
-    }
+  @Test(groups = "regression", dataProvider = "contactDataProvider",
+      dataProviderClass = ContactDataProvider.class,
+      description = "Create Contact With Organization",
+      retryAnalyzer = listeners.RetryAnalyser.class)
+  public void createContactWithOrganizationTest(Map<String, String> data) throws IOException {
+    String contactName = data.get("CONTACT_NAME");
+    String orgName = data.get("ORG_NAME");
+    
+    info("=== STARTING TEST: Create Contact With Organization ===");
+    info("Test Data - Contact Name: " + contactName + ", Organization: " + orgName);
+    System.out.println("Testing Contact With Organization : " + contactName);
+    
+    validateHomePage();
+    
+    ContactCreatePomPage ccpp = openCreateContactPage();
+    
+    info("Setting Last Name: " + contactName);
+    ccpp.setLastName(contactName);
+    pass("Last Name Set Successfully");
+    
+    info("Adding Organization");
+    ccpp.clickOnAddOrgBtn();
+    pass("Add Organization Button Clicked");
+    
+    selectOrganization(orgName);
+    
+    info("Saving Contact with Organization");
+    ccpp.clickSaveContact();
+    pass("Contact with Organization Saved Successfully");
+    
+    navigateToContacts();
+    validateContactsPage();
+    
+    ExcelFileUtil.updateTestStatus(SHEET_NAME, data, "Pass");
+    
+    pass("✓ Contact With Organization Created Successfully - Contact: " + contactName + ", Org: " + orgName);
+    System.out.println("Contact With Organization Created Successfully");
+  }
+
+  // TEST 3 : SUPPORT DATES
+
+  @Test(groups = "regression", dataProvider = "contactDataProvider",
+      dataProviderClass = ContactDataProvider.class,
+      description = "Create Contact With Support Dates",
+      retryAnalyzer = listeners.RetryAnalyser.class)
+  public void createContactWithSupportDatesTest(Map<String, String> data) throws IOException {
+    String contactName = data.get("CONTACT_NAME");
+    String orgName = data.get("ORG_NAME");
+    String startDate = data.get("SUPPORT_START_DATE");
+    String endDate = data.get("SUPPORT_END_DATE");
+    
+    info("=== STARTING TEST: Create Contact With Support Dates ===");
+    info("Test Data - Contact: " + contactName + ", Org: " + orgName + 
+          ", Start Date: " + startDate + ", End Date: " + endDate);
+    System.out.println("Testing Contact With Support Dates : " + contactName);
+    
+    validateHomePage();
+    
+    ContactCreatePomPage ccpp = openCreateContactPage();
+    
+    info("Setting Last Name: " + contactName);
+    ccpp.setLastName(contactName);
+    pass("Last Name Set Successfully");
+    
+    info("Adding Organization");
+    ccpp.clickOnAddOrgBtn();
+    pass("Add Organization Button Clicked");
+    
+    selectOrganization(orgName);
+    
+    info("Setting Support Dates - Start: " + startDate + ", End: " + endDate);
+    ccpp.setSupportDates(startDate, endDate);
+    pass("Support Dates Set Successfully");
+    
+    info("Saving Contact with Support Dates");
+    ccpp.clickSaveContact();
+    pass("Contact with Support Dates Saved Successfully");
+    
+    navigateToContacts();
+    validateContactsPage();
+    
+    ExcelFileUtil.updateTestStatus(SHEET_NAME, data, "Pass");
+    
+    pass("✓ Contact With Support Dates Created Successfully - Contact: " + contactName);
+    System.out.println("Contact With Support Dates Created Successfully");
+  }
 }

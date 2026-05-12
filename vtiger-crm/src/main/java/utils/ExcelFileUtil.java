@@ -6,99 +6,107 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.ss.usermodel.*;
 
 public class ExcelFileUtil {
-	
-	private static Map<String, String> dataMap = new HashMap<>();
-	private static final String FILE_PATH = "./src/test/resources/vtiger-excel-data.xlsx";
-	
-	/**
-	 * Read data from Excel based on test case type
-	 */
-	public static void readData(String sheetName, String tastCaseType) 
-			throws EncryptedDocumentException, IOException {
-		
-		dataMap.clear();
 
-		FileInputStream fis = new FileInputStream(FILE_PATH);
-		Workbook wb = WorkbookFactory.create(fis);
-		Sheet sh = wb.getSheet(sheetName);
+  private static final String FILE_PATH = "./src/test/resources/vtiger-excel-data.xlsx";
 
-		if (sh == null) {
-			wb.close();
-			throw new RuntimeException("Sheet not found: " + sheetName);
-		}
+  // ========== METHOD 1: READ DATA FROM EXCEL ==========
+  public static Map<String, String> readData(String sheetName, String testCaseName)
+      throws IOException {
 
-		Row headerRow = sh.getRow(0); // assume first row is header
+    Map<String, String> dataMap = new HashMap<>();
+    
+    // Open Excel file
+    FileInputStream fis = new FileInputStream(FILE_PATH);
+    Workbook wb = WorkbookFactory.create(fis);
+    Sheet sheet = wb.getSheet(sheetName);
+    
+    // Get header row (row 0)
+    Row headerRow = sheet.getRow(0);
+    
+    // Search for test case row
+    for (int rowNum = 1; rowNum <= sheet.getLastRowNum(); rowNum++) {
+      Row dataRow = sheet.getRow(rowNum);
+      
+      // Check if TC_DESC column (column 2) matches
+      if (dataRow != null && dataRow.getCell(2) != null) {
+        if (testCaseName.equals(dataRow.getCell(2).toString())) {
+          
+          // Found match - copy all data from this row
+          for (int col = 0; col < headerRow.getLastCellNum(); col++) {
+            String columnName = headerRow.getCell(col).toString();
+            String cellValue = dataRow.getCell(col) != null ? dataRow.getCell(col).toString() : "";
+            dataMap.put(columnName, cellValue);  // Example: "ORG_NAME" -> "Marvel"
+          }
+          break; // Stop searching
+        }
+      }
+    }
+    
+    // Close files
+    wb.close();
+    fis.close();
+    
+    return dataMap;
+  }
 
-		for (int i = 1; i <= sh.getLastRowNum(); i++) {
-			Row row = sh.getRow(i);
-			if (row == null) continue;
+  // ========== METHOD 2: WRITE DATA TO EXCEL ==========
+  private static void writeData(String sheetName, int rowNum, int colNum, String value)
+      throws IOException {
 
-			Cell tcCell = row.getCell(2); // test case column
-			if (tcCell == null) continue;
+    // Open Excel file
+    FileInputStream fis = new FileInputStream(FILE_PATH);
+    Workbook wb = WorkbookFactory.create(fis);
+    Sheet sheet = wb.getSheet(sheetName);
+    
+    // Get or create row
+    Row row = sheet.getRow(rowNum);
+    if (row == null) {
+      row = sheet.createRow(rowNum);
+    }
+    
+    // Get or create cell
+    Cell cell = row.getCell(colNum);
+    if (cell == null) {
+      cell = row.createCell(colNum);
+    }
+    
+    // Set value
+    cell.setCellValue(value);
+    
+    // Save file
+    FileOutputStream fos = new FileOutputStream(FILE_PATH);
+    wb.write(fos);
+    
+    // Close files
+    wb.close();
+    fis.close();
+    fos.close();
+  }
 
-			if (tastCaseType.equals(tcCell.toString())) {
+  // ========== METHOD 3: UPDATE TEST STATUS ==========
+  public static void updateTestStatus(String sheetName, Map<String, String> testData, String status)
+      throws IOException {
 
-				for (int c = 0; c < headerRow.getLastCellNum(); c++) {
-
-					Cell keyCell = headerRow.getCell(c);
-					Cell valueCell = row.getCell(c);
-
-					String key = (keyCell != null) ? keyCell.toString() : "";
-					String value = (valueCell != null) ? valueCell.toString() : "";
-
-					dataMap.put(key, value);
-				}
-				break; // stop after match
-			}
-		}
-
-		wb.close();
-	}
-	
-	/**
-	 * Get specific value
-	 */
-	public static String getData(String key) {
-		return dataMap.get(key);
-	}
-	
-	/**
-	 * Get all data
-	 */
-	public static Map<String, String> getAllData() {
-		return dataMap;
-	}
-
-	/**
-	 * Write data to Excel
-	 */
-	public static void writeData(String SheetName, int row_index, int col_index, String value) 
-			throws EncryptedDocumentException, IOException {
-
-		FileInputStream fis = new FileInputStream(FILE_PATH);
-		Workbook wb = WorkbookFactory.create(fis);
-
-		Sheet sheet = wb.getSheet(SheetName);
-		Row row = sheet.getRow(row_index);
-
-		if (row == null) {
-			row = sheet.createRow(row_index);
-		}
-
-		Cell cell = row.getCell(col_index);
-		if (cell == null) {
-			cell = row.createCell(col_index);
-		}
-
-		cell.setCellValue(value);
-
-		FileOutputStream fos = new FileOutputStream(FILE_PATH);
-		wb.write(fos);
-
-		wb.close();
-	}
+    // Get row number from SNO or SLNO column
+    String rowNumber = testData.get("SNO");  // Try SNO first
+    if (rowNumber == null) {
+      rowNumber = testData.get("SLNO");     // Try SLNO if SNO not found
+    }
+    
+    if (rowNumber == null) {
+      System.out.println("WARNING: No SNO/SLNO found - Cannot update Excel");
+      return;
+    }
+    
+    // Convert "1.0" to 1
+    int rowIndex = (int) Double.parseDouble(rowNumber);
+    
+    // Write status to column 5 (Column F)
+    writeData(sheetName, rowIndex, 5, status);
+    
+    System.out.println("✓ Updated status to '" + status + "' for row " + rowIndex);
+  }
 }

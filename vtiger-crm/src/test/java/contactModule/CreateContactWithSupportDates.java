@@ -5,92 +5,63 @@ import java.util.Map;
 
 import org.testng.Assert;
 import org.testng.annotations.Test;
-
+import org.testng.asserts.SoftAssert;
 import base.BaseClass;
 import dataProviders.ContactDataProvider;
+import pomPages.ChildWindowPomPage;
 import pomPages.ContactCreatePomPage;
 import pomPages.ContactPomPage;
 import pomPages.HomePomPage;
-import pomPages.LoginPomPage;
-import pomPages.ChildWindowPomPage;
 import utils.ExcelFileUtil;
 
 public class CreateContactWithSupportDates extends BaseClass {
 
-    @Test(groups = "regression",
-        dataProvider = "contactDataProvider",
-        dataProviderClass = ContactDataProvider.class,
-        description = "Create Contact With Support Dates"
-    )
-    public void createContactWithSupportDates(Map<String, String> data)
-            throws IOException {
+  private static final String SHEET_NAME = "Contact Data1";
 
-        //  Fetch data
-        String tcId        = data.get("TC_ID");
-        String orgName     = data.get("ORG_NAME");
-        String contactName = data.get("CONTACT_NAME");
-        String startDate   = data.get("SUPPORT_START_DATE");
-        String endDate     = data.get("SUPPORT_END_DATE");
+  @Test(groups = "regression", dataProvider = "contactDataProvider",
+      dataProviderClass = ContactDataProvider.class,
+      description = "Create Contact With Support Dates")
 
-        //  Validate input
-        if (orgName == null || contactName == null || startDate == null || endDate == null) {
-            throw new RuntimeException(" Missing data from DataProvider");
-        }
+  public void createContactWithSupportDates(Map<String, String> data) throws IOException {
+    
+    SoftAssert softAssert = new SoftAssert();
+    String orgName = data.get("ORG_NAME");
 
-        //  Login
-        new LoginPomPage(driver).Login();
+    String contactName = data.get("CONTACT_NAME");
 
-        HomePomPage hpp = new HomePomPage(driver);
-        Assert.assertEquals(hpp.getHomePageHeading(), "Home");
+    String startDate = data.get("SUPPORT_START_DATE");
 
-        //  Navigate to Contacts
-        hpp.clickOnContactTab();
+    String endDate = data.get("SUPPORT_END_DATE");
 
-        ContactPomPage cpp = new ContactPomPage(driver);
-        cpp.clickCreateNewContact();
+    HomePomPage hpp = new HomePomPage(driver);
 
-        ContactCreatePomPage ccpp = new ContactCreatePomPage(driver);
-        Assert.assertEquals(ccpp.getCreateContactPageHeading(), "Creating New Contact");
+    softAssert.assertTrue(hpp.getHomePageHeading().contains("Home"), "Home page not loaded");
 
-        //  Enter contact name
-        ccpp.getLastNameTf().sendKeys(contactName);
+    hpp.clickOnContactTab();
 
-        //  Child Window Handling 
-        ChildWindowPomPage helper = new ChildWindowPomPage(driver);
+    ContactPomPage cpp = new ContactPomPage(driver);
 
-        String parentWindow = helper.getPatentWindowId();   
+    cpp.clickCreateNewContact();
 
-        ccpp.clickOnAddOrgBtn();                            
+    ContactCreatePomPage ccpp = new ContactCreatePomPage(driver);
 
-        String childWindow = helper.getChildWindowId(parentWindow);
+    Assert.assertTrue(ccpp.getCreateContactPageHeading().contains("Creating"),
+        "Create Contact page not loaded");
 
-        driver.switchTo().window(childWindow);            
+    ccpp.setLastName(contactName);
 
-        helper.searchOrgName(orgName);
-        helper.clickOnSeletedOrg(orgName);
+    ccpp.clickOnAddOrgBtn();
 
-        driver.switchTo().window(parentWindow);            
+    new ChildWindowPomPage(driver).chooseOrganization(orgName);
 
-        //  Enter support dates
-        ccpp.getSupportStateDateTf().clear();
-        ccpp.getSupportStateDateTf().sendKeys(startDate);
+    ccpp.setSupportDates(startDate, endDate);
 
-        ccpp.getSupportEndDateTf().clear();
-        ccpp.getSupportEndDateTf().sendKeys(endDate);
+    ccpp.clickSaveContact();
 
-        //  Save
-        ccpp.clickSaveContact();
+    hpp.clickOnContactTab();
 
-        //  Validation
-        hpp.clickOnContactTab();
-        String header = cpp.getContactHeader();
+    Assert.assertTrue(cpp.getContactHeader().contains("Contacts"), "Contact creation failed");
 
-        try {
-            Assert.assertTrue(header.contains("Contacts"));
-            ExcelFileUtil.writeData("Contact Data1", 5, 5, "Pass");
-        } catch (AssertionError e) {
-            ExcelFileUtil.writeData("Contact Data1 ", 5, 5, "Fail");
-            throw e;
-        }
-    }
+    ExcelFileUtil.updateTestStatus(SHEET_NAME, data, "Pass");
+  }
 }

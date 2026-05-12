@@ -11,15 +11,16 @@ import org.openqa.selenium.edge.EdgeDriver;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.Reporter;
 import org.testng.annotations.*;
-import org.testng.annotations.Listeners;  // ADD THIS IMPORT
+import org.testng.annotations.Listeners;
 
 import pomPages.HomePomPage;
 import pomPages.LoginPomPage;
 import utils.DatabaseUtils;
 import utils.PropertyFileUtil;
-import listeners.TestListener;  // ADD THIS IMPORT
+import listeners.TestListener;
+import listeners.UtilityObjectClass;  // ADD THIS IMPORT
 
-@Listeners(TestListener.class)  // ADD THIS ANNOTATION
+@Listeners(TestListener.class)
 public class BaseClass {
 
     protected WebDriver driver;
@@ -40,7 +41,7 @@ public class BaseClass {
 
         dbUtil = new DatabaseUtils();
         dbUtil.connectToDB();
-
+        
         Reporter.log("Database Connected", true);
     }
 
@@ -56,10 +57,16 @@ public class BaseClass {
 
     @Parameters("browser")
     @BeforeClass
-    public void setUp(String browser) throws IOException {
+    public void setUp(@Optional("") String browser) throws IOException {
 
         Reporter.log("Launching Browser", true);
-
+        
+        // If XML browser not passed get it from properties file
+        if(browser == null || browser.isEmpty()) {
+            
+            browser = pfu.getPropertyValue("browser");
+        }
+      
         long timeouts = Long.parseLong(
                 pfu.getPropertyValue("timeouts"));
 
@@ -67,7 +74,6 @@ public class BaseClass {
         password = pfu.getPropertyValue("password");
 
         // Browser Launch
-
         if (browser.equalsIgnoreCase("chrome")) {
 
             driver = new ChromeDriver();
@@ -83,7 +89,10 @@ public class BaseClass {
 
         sdriver = driver;
         
-        // ADD DEBUG - Verify sdriver is set
+        // Store driver in ThreadLocal for parallel execution
+        UtilityObjectClass.setDriver(driver);
+        
+        // DEBUG - Verify sdriver is set
         Reporter.log("sdriver initialized: " + (sdriver != null ? "SUCCESS" : "FAILED"), true);
 
         driver.manage().window().maximize();
@@ -99,7 +108,6 @@ public class BaseClass {
         driver.get(url);
 
         // Wait for complete page load
-
         wait.until(webDriver ->
                 ((JavascriptExecutor) webDriver)
                         .executeScript("return document.readyState")
@@ -113,7 +121,7 @@ public class BaseClass {
     @BeforeMethod
     public void login() throws IOException {
 
-        // ADD DEBUG - Check driver before login
+        
         if (driver == null) {
             Reporter.log("ERROR: driver is null before login!", true);
             throw new IllegalStateException("WebDriver is null before login");
@@ -149,6 +157,9 @@ public class BaseClass {
 
             driver.quit();
             Reporter.log("Browser Closed", true);
+            
+            // Clear ThreadLocal driver
+            UtilityObjectClass.setDriver(null);
             
             // DON'T set sdriver to null here - other tests might need it
             // sdriver = null;

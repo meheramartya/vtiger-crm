@@ -7,68 +7,83 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
+
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 public class ChildWindowPomPage {
 
-    public WebDriver driver;
+  private WebDriver driver;
 
-    //  Locators
-    @FindBy(name = "search_text")
-    private WebElement searchBox;
+  private WebDriverWait wait;
 
-    @FindBy(name = "search")
-    private WebElement searchNowBtn;
+  // Locators
 
-    //  Constructor
-    public ChildWindowPomPage(WebDriver driver) {
-        this.driver = driver;
-        PageFactory.initElements(driver, this);
+  @FindBy(name = "search_text")
+  private WebElement searchBox;
+
+  @FindBy(name = "search")
+  private WebElement searchNowBtn;
+
+  // Constructor
+
+  public ChildWindowPomPage(WebDriver driver) {
+
+    this.driver = driver;
+
+    this.wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+
+    PageFactory.initElements(driver, this);
+  }
+
+  // Get Parent Window
+
+  public String getParentWindowId() {
+
+    return driver.getWindowHandle();
+  }
+
+  // Switch To Child Window
+
+  public void switchToChildWindow(String parentWindow) {
+
+    for (String window : driver.getWindowHandles()) {
+
+      if (!window.equals(parentWindow)) {
+
+        driver.switchTo().window(window);
+
+        break;
+      }
     }
+  }
 
-    //  Get parent window
-    public String getPatentWindowId() {
-        return driver.getWindowHandle();
-    }
+  // Search Organization
 
-    //  Get child window
-    public String getChildWindowId(String parentId) {
-        for (String windowId : driver.getWindowHandles()) {
-            if (!windowId.equals(parentId)) {
-                return windowId;
-            }
-        }
-        return null;
-    }
+  public void searchOrganization(String orgName) {
 
-    //  Search org
-    public void searchOrgName(String orgName) {
+    wait.until(ExpectedConditions.visibilityOf(searchBox));
 
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    searchBox.clear();
+    searchBox.sendKeys(orgName);
+    searchNowBtn.click();
+  }
 
-        wait.until(ExpectedConditions.visibilityOf(searchBox));
+  // Select Organization
 
-        searchBox.clear();
-        searchBox.sendKeys(orgName);
+  public void selectOrganization(String orgName) {
+    By orgLocator = By.xpath("//a[contains(text(),'" + orgName + "')]");
+    wait.until(ExpectedConditions.visibilityOfElementLocated(orgLocator));
+    driver.findElement(orgLocator).click();
+  }
 
-        searchNowBtn.click();
-    }
+  // Complete Organization Selection
 
-    //  Get org element
-    public WebElement getSelectedOrg(String orgName) {
-
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-
-        By orgLocator = By.xpath("//a[contains(text(),'" + orgName + "')]");
-
-        wait.until(ExpectedConditions.visibilityOfElementLocated(orgLocator));
-
-        return driver.findElement(orgLocator);
-    }
-
-    //  Click org
-    public void clickOnSeletedOrg(String orgName) {
-        getSelectedOrg(orgName).click();
-    }
+  public void chooseOrganization(String orgName) {
+    String parentWindow = getParentWindowId();
+    switchToChildWindow(parentWindow);
+    searchOrganization(orgName);
+    selectOrganization(orgName);
+    driver.switchTo().window(parentWindow);
+  }
 }

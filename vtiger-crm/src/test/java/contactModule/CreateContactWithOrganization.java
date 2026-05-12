@@ -5,94 +5,63 @@ import java.util.Map;
 
 import org.testng.Assert;
 import org.testng.annotations.Test;
-import org.testng.asserts.SoftAssert;
+
+import com.aventstack.extentreports.Status;
 
 import base.BaseClass;
 import dataProviders.ContactDataProvider;
+import listeners.TestListener;
 import pomPages.ChildWindowPomPage;
 import pomPages.ContactCreatePomPage;
 import pomPages.ContactPomPage;
 import pomPages.HomePomPage;
-import pomPages.LoginPomPage;
 import utils.ExcelFileUtil;
 
 public class CreateContactWithOrganization extends BaseClass {
 
-    @Test(groups = "regression",
-        dataProvider = "contactDataProvider",
-        dataProviderClass = ContactDataProvider.class,
-        description = "Create Contact With Organization"
-    )
-    public void createContactWithOrganization(Map<String, String> data)
-            throws IOException {
+  private static final String SHEET_NAME = "Contact Data1";
 
-        String orgName = data.get("ORG_NAME");
-        String contactName = data.get("CONTACT_NAME");
+  @Test(groups = "regression", dataProvider = "contactDataProvider",
+      dataProviderClass = ContactDataProvider.class,
+      description = "Create Contact With Organization")
 
-        //  Login
-        new LoginPomPage(driver).Login();
+  public void createContactWithOrganization(Map<String, String> data) throws IOException {
 
-        HomePomPage hpp = new HomePomPage(driver);
-        SoftAssert softAssert = new SoftAssert();
-        
+    String orgName = data.get("ORG_NAME");
 
-        //  Validate Home
-        Assert.assertTrue(hpp.getHomePageHeading().contains("Home"),
-                " Home page not loaded");
+    String contactName = data.get("CONTACT_NAME");
 
-        //  Navigate to Contacts
-        hpp.clickOnContactTab();
+    HomePomPage hpp = new HomePomPage(driver);
+    
+    TestListener.test.log(Status.INFO, "Validating Home Page");
+    Assert.assertTrue(hpp.getHomePageHeading().contains("Home"), "Home page not loaded");
+    TestListener.test.log(Status.PASS, "Validated Home Page Successful");
+    
+    hpp.clickOnContactTab();
+    TestListener.test.log(Status.INFO, "Navigated to Contacts tab");
 
-        ContactPomPage cpp = new ContactPomPage(driver);
-        cpp.clickCreateNewContact();
+    ContactPomPage cpp = new ContactPomPage(driver);
+    TestListener.test.log(Status.INFO, "Opened new COntact Page");
 
-        ContactCreatePomPage ccpp = new ContactCreatePomPage(driver);
+    cpp.clickCreateNewContact();
 
-        //  Validate Create Contact page
-        Assert.assertTrue(
-                ccpp.getCreateContactPageHeading().contains("Creating"),
-                " Create Contact page not loaded"
-        );
+    ContactCreatePomPage ccpp = new ContactCreatePomPage(driver);
 
-        //  Enter Contact Name
-        ccpp.getLastNameTf().sendKeys(contactName);
+    Assert.assertTrue(ccpp.getCreateContactPageHeading().contains("Creating"),
+        "Create Contact page not loaded");
 
-        //  Click Organization lookup
-        ccpp.clickOnAddOrgBtn();
+    ccpp.setLastName(contactName);
 
-        ChildWindowPomPage cwpp = new ChildWindowPomPage(driver);
+    ccpp.clickOnAddOrgBtn();
 
-        String parent = cwpp.getPatentWindowId();
-        String child = cwpp.getChildWindowId(parent);
+    new ChildWindowPomPage(driver).chooseOrganization(orgName);
 
-        driver.switchTo().window(child);
+    ccpp.clickSaveContact();
 
-        //  Search and select org
-        cwpp.searchOrgName(orgName);
-        cwpp.clickOnSeletedOrg(orgName);
+    hpp.clickOnContactTab();
 
-        //  Switch back
-        driver.switchTo().window(parent);
+    Assert.assertTrue(cpp.getContactHeader().contains("Contacts"), "Contact creation failed");
 
-        //  Save contact
-        ccpp.clickSaveContact();
-
-        //  Navigate back
-        hpp.clickOnContactTab();
-
-        String header = cpp.getContactHeader();
-
-        int rowIndex = (int) Double.parseDouble(data.get("SLNO"));
-
-        try {
-            Assert.assertTrue(header.contains("Contacts"),
-                    " Contact creation failed");
-
-            ExcelFileUtil.writeData("Contact Data1", rowIndex, 5, "Pass");
-
-        } catch (AssertionError e) {
-            ExcelFileUtil.writeData("Contact Data1", rowIndex, 5, "Fail");
-            throw e;
-        }
-    }
+    ExcelFileUtil.updateTestStatus(SHEET_NAME, data, "Pass");
+  }
 }

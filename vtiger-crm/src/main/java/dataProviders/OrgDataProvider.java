@@ -11,19 +11,21 @@ import utils.ExcelFileUtil;
 
 public class OrgDataProvider {
 
-	@DataProvider(name = "organizationDataProvider")
-	public Object[][] getData(Method method) throws EncryptedDocumentException, IOException {
-		
-		 String testCaseDesc = method.getAnnotation(Test.class).description();
-		
-		 ExcelFileUtil.readData("Organization Data", testCaseDesc);
-		
-		 Map<String, String> dataMap = ExcelFileUtil.getAllData();
-		
+  @DataProvider(name = "organizationDataProvider")
+  public Object[][] getData(Method method) throws EncryptedDocumentException, IOException {
+    String testCaseDesc = method.getAnnotation(Test.class).description();
+    System.out.println("Fetching data for: " + testCaseDesc);
 
-	     Object[][] data = new Object[1][1];
-	     data[0][0] = dataMap;
+    // Read Excel and get data map
+    Map<String, String> dataMap = ExcelFileUtil.readData("Organization Data", testCaseDesc);
 
-	     return data;
-	}
+    // Validation
+    if (dataMap == null || dataMap.isEmpty()) {
+      throw new RuntimeException("No data found for: " + testCaseDesc);
+    }
+
+    Object[][] data = new Object[1][1];
+    data[0][0] = dataMap;
+    return data;
+  }
 }

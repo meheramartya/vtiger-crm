@@ -37,13 +37,6 @@ public class CreateOrgWithPhoneNumber extends BaseClass {
 		
 		HomePomPage hpp = new HomePomPage(driver);
 		
-//		validate home page
-//		if(hpp.getHomePageHeading().equals("Home")) {
-//			System.out.println("Home page validated.");
-//		} else {
-//			System.out.println("Some error occurred");
-//			Assert.fail("Error Occured during Login");
-//		}
 		
 		
 		//-------------------------Soft Assert --Home page
@@ -99,13 +92,7 @@ public class CreateOrgWithPhoneNumber extends BaseClass {
 		
 		OrganizationCreatedListPomPage ocl = new OrganizationCreatedListPomPage(driver);
 		
-//		validate Organization Info page
-//		if(ocl.getOrgInfoHeader().contains(orgName)) {
-//			System.out.println("Org Information page validated.");
-//		} else {
-//			System.out.println("Some error occurred");
-//			Assert.fail("Error Occured");
-//		}
+
 		
 		String orginfoHeader = ocl.getOrgInfoHeader();
 		Assert.assertTrue(orginfoHeader.contains(orgName), 
@@ -118,13 +105,9 @@ public class CreateOrgWithPhoneNumber extends BaseClass {
 		
 		String actualHeader = opp.getOrgHeader();
 
-		try {
-		    Assert.assertEquals(actualHeader, "Organizations");
-		    ExcelFileUtil.writeData("Organization Data", 7, 5, "Pass");
-		} catch (AssertionError e) {
-		    ExcelFileUtil.writeData("Organization Data", 7, 5, "Fail");
-		    throw e;
-		}
+		Assert.assertTrue(actualHeader.contains("Organizations"));
+	    ExcelFileUtil.updateTestStatus("Organization Data", data, "Pass"); // Direct call
+
 		softAssert.assertAll();
 	}
 

@@ -6,9 +6,9 @@
       <class name="contactModule.ContactModule">
         <methods>
           <include name="disconnectDB"/>
-          <include name="quitBrowser"/>
-          <include name="logout"/>
           <include name="login"/>
+          <include name="logout"/>
+          <include name="quitBrowser"/>
           <include name="setUp"/>
           <include name="configParallelExe"/>
           <include name="closeConfigPE"/>
