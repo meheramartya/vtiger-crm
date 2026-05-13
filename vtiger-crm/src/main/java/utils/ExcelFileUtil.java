@@ -85,28 +85,47 @@ public class ExcelFileUtil {
     fis.close();
     fos.close();
   }
-
-  // ========== METHOD 3: UPDATE TEST STATUS ==========
+  
+  
   public static void updateTestStatus(String sheetName, Map<String, String> testData, String status)
-      throws IOException {
+		    throws IOException {
 
-    // Get row number from SNO or SLNO column
-    String rowNumber = testData.get("SNO");  // Try SNO first
-    if (rowNumber == null) {
-      rowNumber = testData.get("SLNO");     // Try SLNO if SNO not found
-    }
-    
-    if (rowNumber == null) {
-      System.out.println("WARNING: No SNO/SLNO found - Cannot update Excel");
-      return;
-    }
-    
-    // Convert "1.0" to 1
-    int rowIndex = (int) Double.parseDouble(rowNumber);
-    
-    // Write status to column 5 (Column F)
-    writeData(sheetName, rowIndex, 5, status);
-    
-    System.out.println("✓ Updated status to '" + status + "' for row " + rowIndex);
+		    // Get row number
+		    String rowNumber = testData.get("SNO");
+		    if (rowNumber == null) {
+		        rowNumber = testData.get("SLNO");
+		    }
+		    
+		    if (rowNumber == null) {
+		        System.out.println("WARNING: No SNO/SLNO found");
+		        return;
+		    }
+		    
+		    int rowIndex = (int) Double.parseDouble(rowNumber);
+		    
+		    // Find the STATUS column (look for "STATUS" in header row)
+		    FileInputStream fis = new FileInputStream(FILE_PATH);
+		    Workbook wb = WorkbookFactory.create(fis);
+		    Sheet sheet = wb.getSheet(sheetName);
+		    Row headerRow = sheet.getRow(0);
+		    
+		    int statusCol = -1;
+		    for (int col = 0; col < headerRow.getLastCellNum(); col++) {
+		        if (headerRow.getCell(col).toString().equalsIgnoreCase("STATUS")) {
+		            statusCol = col;
+		            break;
+		        }
+		    }
+		    wb.close();
+		    fis.close();
+		    
+		    // Write status to the correct column
+		    if (statusCol != -1) {
+		        writeData(sheetName, rowIndex, statusCol, status);
+		        System.out.println("✓ Updated status to '" + status + "' for row " + rowIndex);
+		    } else {
+		        System.out.println("STATUS column not found!");
+		    }
+		}
+
   }
-}
